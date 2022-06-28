@@ -36,6 +36,6 @@ class MyTopo( Topo ):
         # Add links right
         self.addLink( rightUpperHost, switches[-1] )
         self.addLink( rightDownHost, switches[-1] )
-        print(sys.argv)
+
 
 topos = { 'mytopo': ( lambda n: MyTopo(n) ) }
