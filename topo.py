@@ -38,5 +38,4 @@ class MyTopo( Topo ):
         self.addLink( rightDownHost, switches[-1] )
         print(sys.argv)
 
-
 topos = { 'mytopo': ( lambda n: MyTopo(n) ) }
