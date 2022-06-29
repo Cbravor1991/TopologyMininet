@@ -46,7 +46,11 @@ class Firewall (EventMixin):
             match = of.ofp_match(**rule)
             msg = of.ofp_flow_mod(match=match)
             event.connection.send(msg)
-        log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+            self.log_event(event)
+            log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+
+    def log_event(self, event):
+        log.debug('Ofp: {}'.format(event.ofp.ports.port_no))
 
 
 def launch():
