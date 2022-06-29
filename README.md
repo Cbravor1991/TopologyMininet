@@ -16,6 +16,6 @@ sudo mn --custom topo.py --topo mytopo,3 --mac --arp --switch ovsk --controller 
 
 ## Ejecutar controladores
 Copiar los archivos 'topo_ctl.py', 'l2_learning.py' que se encuentran en el directorio pox/ext, al directorio de mismo nombre en la distribución de pox que se tenga instalada. 
-Despues ejecutar esos archivos desde consola usando tenes que estar en la raiz no dentro de pox parta que ande
+Tenes que estar en la raiz no dentro de pox antes de ejecutar los archivos se ejecutan usando:
 ```
 $ pox/pox.py topo_ctl (al hacer esto se ejecutan los controladores importados en topo_ctl en este caso l2_learnig.py)
