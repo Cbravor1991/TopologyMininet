@@ -1,23 +1,19 @@
-# Copyright 2011 James McCauley
+# Copyright 2011-2012 James McCauley
 #
-# This file is part of POX.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at:
 #
-# POX is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# POX is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with POX.  If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 An L2 learning switch.
-
 It is derived from one written live for an SDN crash course.
 It is somwhat similar to NOX's pyswitch in that it installs
 exact-match rules for each flow.
@@ -25,7 +21,7 @@ exact-match rules for each flow.
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
-from pox.lib.util import dpid_to_str
+from pox.lib.util import dpid_to_str, str_to_dpid
 from pox.lib.util import str_to_bool
 import time
 
@@ -38,22 +34,17 @@ _flood_delay = 0
 class LearningSwitch (object):
   """
   The learning switch "brain" associated with a single OpenFlow switch.
-
   When we see a packet, we'd like to output it on a port which will
   eventually lead to the destination.  To accomplish this, we build a
   table that maps addresses to ports.
-
   We populate the table by observing traffic.  When we see a packet
   from some source coming from some port, we know that source is out
   that port.
-
   When we want to forward traffic, we look up the desintation in our
   table.  If we don't know the port, we simply send the message out
   all ports except the one it came in on.  (In the presence of loops,
   this is bad!).
-
   In short, our algorithm looks like this:
-
   For each packet from the switch:
   1) Use source address and switch port to update address/port table
   2) Is transparent = False and either Ethertype is LLDP or the packet's
@@ -101,15 +92,12 @@ class LearningSwitch (object):
     log.debug('Checksum: {:#x}'.format(icmp_msg.csum))
     log.debug('Payload: {}'.format(icmp_msg.payload))
 
-
   def _handle_PacketIn (self, event):
     """
     Handle packet in messages from the switch to implement above algorithm.
     """
 
     packet = event.parsed
-
-    # log.debug("Received from port {} with src {} and dst {}".format(event.port, packet.src, packet.dst))
 
     def flood (message = None):
       """ Floods the packet """
@@ -175,7 +163,7 @@ class LearningSwitch (object):
               % (packet.src, packet.dst, dpid_to_str(event.dpid), port))
           drop(10)
           return
-
+        
         # Logear el protocolo, si se trata de TCP detectar si es un SYN
         tcp_found = packet.find('tcp')
         if tcp_found:
@@ -192,7 +180,7 @@ class LearningSwitch (object):
           self.log_icmp_msg(icmp_pk)
 
         # 6
-        log.info("Creando flujo para %s.%i -> %s.%i" %
+        log.debug("installing flow for %s.%i -> %s.%i" %
                   (packet.src, event.port, packet.dst, port))
         msg = of.ofp_flow_mod()
         msg.match = of.ofp_match.from_packet(packet, event.port)
@@ -207,16 +195,25 @@ class l2_learning (object):
   """
   Waits for OpenFlow switches to connect and makes them learning switches.
   """
-  def __init__ (self, transparent):
+  def __init__ (self, transparent, ignore = None):
+    """
+    Initialize
+    See LearningSwitch for meaning of 'transparent'
+    'ignore' is an optional list/set of DPIDs to ignore
+    """
     core.openflow.addListeners(self)
     self.transparent = transparent
+    self.ignore = set(ignore) if ignore else ()
 
   def _handle_ConnectionUp (self, event):
+    if event.dpid in self.ignore:
+      log.debug("Ignoring connection %s" % (event.connection,))
+      return
     log.debug("Connection %s" % (event.connection,))
     LearningSwitch(event.connection, self.transparent)
 
 
-def launch (transparent=False, hold_down=_flood_delay):
+def launch (transparent=False, hold_down=_flood_delay, ignore = None):
   """
   Starts an L2 learning switch.
   """
@@ -227,4 +224,8 @@ def launch (transparent=False, hold_down=_flood_delay):
   except:
     raise RuntimeError("Expected hold-down to be a number")
 
-  core.registerNew(l2_learning, str_to_bool(transparent))
+  if ignore:
+    ignore = ignore.replace(',', ' ').split()
+    ignore = set(str_to_dpid(dpid) for dpid in ignore)
+
+  core.registerNew(l2_learning, str_to_bool(transparent), ignore)
