@@ -16,13 +16,10 @@ from pox.lib.addresses import EthAddr
 from collections import namedtuple
 import pox.lib.packet as pkt
 import os
-''' Add your imports here ... '''
 
 
 log = core.getLogger()
 policyFile = "%s/pox/pox/misc/firewall-policies.csv" % os.environ['HOME']
-
-''' Add your global variables here ... '''
 
 
 @staticmethod
@@ -69,6 +66,10 @@ class Firewall (EventMixin):
         self.filter_TCP_port_80(event)
         self.filter_h1(event)
         log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+        self.log_event(event)
+
+    def log_event(self, event):
+        log.debug('Ofp: {}'.format(event.ofp.ports.port_no))
 
 
 def launch():
