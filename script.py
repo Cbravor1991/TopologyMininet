@@ -25,7 +25,6 @@ def run():
     result = h2.cmd('iperf -s -u -p 80 &')
     result = h1.cmd('iperf -c 10.0.0.2 -u -p 80')
     print(result)
-    # client = CLI('h2 iperf -s -u -p 5003 ')
 
     net.stop()
 

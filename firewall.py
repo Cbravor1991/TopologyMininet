@@ -65,11 +65,12 @@ class Firewall (EventMixin):
         self.filter_UDP_port_80(event)
         self.filter_TCP_port_80(event)
         self.filter_h1(event)
-        log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+
         self.log_event(event)
 
     def log_event(self, event):
         log.debug('Ofp: {}'.format(event.ofp.ports.port_no))
+        log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
 
 
 def launch():
